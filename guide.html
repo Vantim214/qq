@@ -1,0 +1,720 @@
+<!doctype html>
+<html lang="uk">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Мій ігровий ПК</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600&family=Unbounded:wght@500;700&display=swap">
+<style>
+/* Layout: sticky stage rail on the left (chips on phone), checklist column on the right, like a BIOS menu tree */
+:root {
+  --bg: #0f1216;
+  --panel: #161b22;
+  --panel-2: #1c222b;
+  --line: #262d38;
+  --fg: #e5e8ed;
+  --muted: #8d97a5;
+  --accent: #f0a640;
+  --accent-ink: #1a1206;
+  --accent-soft: rgba(240,166,64,.12);
+  --ok: #4cc38a;
+  --ok-soft: rgba(76,195,138,.12);
+  --bad: #ef6b66;
+  --bad-soft: rgba(239,107,102,.10);
+  --code: #0b0e12;
+  --f-display: "Unbounded", "Segoe UI", system-ui, sans-serif;
+  --f-body: "IBM Plex Sans", "Segoe UI", system-ui, sans-serif;
+  --f-mono: "IBM Plex Mono", Consolas, "Cascadia Mono", monospace;
+  color-scheme: dark;
+}
+@media (prefers-color-scheme: light) {
+  :root:not([data-theme="dark"]) {
+    --bg: #f3f5f7; --panel: #ffffff; --panel-2: #f7f8fa; --line: #dce1e7; --fg: #151a21; --muted: #5a6473;
+    --accent: #b0650a; --accent-ink: #ffffff; --accent-soft: rgba(176,101,10,.10);
+    --ok: #1c8754; --ok-soft: rgba(28,135,84,.10); --bad: #c23c37; --bad-soft: rgba(194,60,55,.08); --code: #eef1f4;
+    color-scheme: light;
+  }
+}
+:root[data-theme="light"] {
+  --bg: #f3f5f7; --panel: #ffffff; --panel-2: #f7f8fa; --line: #dce1e7; --fg: #151a21; --muted: #5a6473;
+  --accent: #b0650a; --accent-ink: #ffffff; --accent-soft: rgba(176,101,10,.10);
+  --ok: #1c8754; --ok-soft: rgba(28,135,84,.10); --bad: #c23c37; --bad-soft: rgba(194,60,55,.08); --code: #eef1f4;
+  color-scheme: light;
+}
+
+* { box-sizing: border-box; }
+body {
+  background: var(--bg); color: var(--fg);
+  font: 15px/1.55 var(--f-body);
+  padding-left: max(16px, env(safe-area-inset-left, 0px));
+  padding-right: max(16px, env(safe-area-inset-right, 0px));
+  padding-block: 0 64px;
+}
+a { color: var(--accent); text-underline-offset: 2px; }
+a:focus-visible, button:focus-visible, input:focus-visible, summary:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+code, .mono { font-family: var(--f-mono); font-size: .9em; }
+.wrap { max-width: 1180px; margin: 0 auto; }
+
+/* header */
+header.top { padding-block: 28px 20px; display: grid; gap: 18px; border-bottom: 1px solid var(--line); }
+.brand { display: flex; flex-wrap: wrap; align-items: baseline; gap: 6px 16px; }
+h1 { font: 700 clamp(22px, 4vw, 32px)/1.15 var(--f-display); margin: 0; letter-spacing: -.01em; text-wrap: balance; }
+.spec { font-family: var(--f-mono); font-size: 12.5px; color: var(--muted); letter-spacing: .02em; }
+.toolbar { display: flex; flex-wrap: wrap; gap: 10px 14px; align-items: center; }
+.meter { flex: 1 1 260px; display: grid; gap: 6px; min-width: 0; }
+.meter-row { display: flex; justify-content: space-between; font-size: 13px; color: var(--muted); }
+.meter-row b { color: var(--fg); font-weight: 600; font-variant-numeric: tabular-nums; }
+.bar { height: 6px; background: var(--line); border-radius: 3px; overflow: hidden; }
+.bar > i { display: block; height: 100%; width: 0; background: var(--accent); transition: width .3s ease; }
+.search { flex: 1 1 220px; min-width: 0; }
+.search input {
+  width: 100%; padding: 9px 12px; border-radius: 8px; border: 1px solid var(--line);
+  background: var(--panel); color: var(--fg); font: inherit; font-size: 14px;
+}
+.btn {
+  font: 500 13px/1 var(--f-body); padding: 9px 12px; border-radius: 8px; cursor: pointer;
+  border: 1px solid var(--line); background: var(--panel); color: var(--fg); white-space: nowrap;
+}
+.btn:hover { border-color: var(--accent); }
+.btn.danger { color: var(--bad); }
+.btn[aria-pressed="true"] { background: var(--accent-soft); border-color: var(--accent); }
+
+/* layout */
+.layout { display: grid; grid-template-columns: 230px minmax(0, 1fr); gap: 36px; padding-top: 24px; }
+nav.rail { position: sticky; top: calc(env(safe-area-inset-top, 0px) + 16px); align-self: start; max-height: calc(100vh - 32px); overflow-y: auto; }
+.rail ol { list-style: none; margin: 0; padding: 0; display: grid; gap: 2px; }
+.rail a {
+  display: grid; grid-template-columns: 26px 1fr auto; gap: 8px; align-items: center;
+  padding: 7px 10px; border-radius: 7px; text-decoration: none; color: var(--fg); font-size: 13.5px;
+}
+.rail a:hover { background: var(--panel); }
+.rail .n { font-family: var(--f-mono); font-size: 12px; color: var(--muted); }
+.rail .c { font-family: var(--f-mono); font-size: 11.5px; color: var(--muted); font-variant-numeric: tabular-nums; }
+.rail a.done .c { color: var(--ok); }
+.rail .sep { margin: 14px 10px 6px; font-size: 11px; letter-spacing: .08em; text-transform: uppercase; color: var(--muted); }
+
+main { min-width: 0; display: grid; gap: 44px; }
+section.stage { display: grid; gap: 14px; scroll-margin-top: 16px; }
+.stage-head { display: flex; flex-wrap: wrap; gap: 6px 14px; align-items: baseline; }
+.stage-num { font: 500 13px var(--f-mono); color: var(--accent); }
+h2 { font: 500 clamp(18px, 2.6vw, 22px)/1.25 var(--f-display); margin: 0; text-wrap: balance; }
+.stage-count { margin-left: auto; font: 12.5px var(--f-mono); color: var(--muted); font-variant-numeric: tabular-nums; }
+.stage-intro { margin: 0; color: var(--muted); max-width: 70ch; }
+
+/* checklist items */
+.items { display: grid; gap: 8px; }
+.item {
+  display: grid; grid-template-columns: 26px minmax(0, 1fr); gap: 4px 12px;
+  padding: 14px 16px; background: var(--panel); border: 1px solid var(--line); border-radius: 10px;
+}
+.item.is-done { background: var(--panel-2); }
+.item.is-done .t { color: var(--muted); text-decoration: line-through; text-decoration-color: var(--line); }
+.item.is-done .body > :not(.t) { opacity: .6; }
+.hide-done .item.is-done { display: none; }
+.item input[type="checkbox"] {
+  appearance: none; -webkit-appearance: none; width: 20px; height: 20px; margin: 2px 0 0; cursor: pointer;
+  border: 1.5px solid var(--muted); border-radius: 5px; display: grid; place-items: center; background: transparent;
+}
+.item input[type="checkbox"]:checked { background: var(--ok); border-color: var(--ok); }
+.item input[type="checkbox"]:checked::after {
+  content: ""; width: 5px; height: 10px; border: solid var(--bg); border-width: 0 2px 2px 0; transform: translateY(-1px) rotate(45deg);
+}
+.body { display: grid; gap: 8px; min-width: 0; }
+.t { font-weight: 600; cursor: pointer; }
+.d { color: var(--muted); max-width: 72ch; }
+.d p { margin: 0 0 6px; } .d p:last-child { margin: 0; }
+.d ol, .d ul { margin: 0; padding-left: 20px; display: grid; gap: 3px; }
+
+.kv-wrap { overflow-x: auto; }
+table.kv { border-collapse: collapse; width: 100%; font-size: 14px; }
+table.kv td { padding: 6px 10px 6px 0; border-top: 1px solid var(--line); vertical-align: top; }
+table.kv tr:first-child td { border-top: 0; }
+table.kv td.k { width: 42%; }
+table.kv td.v { font-family: var(--f-mono); font-size: 13.5px; color: var(--accent); }
+table.kv td.w { color: var(--muted); font-size: 12.5px; }
+table.kv .path { display: block; font-size: 12px; color: var(--muted); font-family: var(--f-mono); }
+
+.cmd { display: flex; gap: 8px; align-items: stretch; min-width: 0; }
+.cmd pre {
+  flex: 1; min-width: 0; margin: 0; padding: 9px 12px; border-radius: 7px; background: var(--code);
+  border: 1px solid var(--line); overflow-x: auto; font: 13px/1.5 var(--f-mono); color: var(--fg);
+}
+.cmd .btn { padding: 0 12px; }
+.links { display: flex; flex-wrap: wrap; gap: 8px; }
+.links a {
+  font-size: 13px; padding: 5px 10px; border-radius: 6px; border: 1px solid var(--line); text-decoration: none;
+  background: var(--panel-2);
+}
+.links a:hover { border-color: var(--accent); }
+.note { font-size: 13.5px; padding: 8px 12px; border-radius: 7px; border-left: 3px solid var(--accent); background: var(--accent-soft); }
+.warn { font-size: 13.5px; padding: 8px 12px; border-radius: 7px; border-left: 3px solid var(--bad); background: var(--bad-soft); }
+
+/* reference */
+.ref-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 14px; }
+.card { background: var(--panel); border: 1px solid var(--line); border-radius: 10px; padding: 16px; min-width: 0; }
+.card h3 { margin: 0 0 10px; font: 600 15px var(--f-body); }
+.card ul { margin: 0; padding-left: 18px; display: grid; gap: 5px; }
+.norms td.v { color: var(--ok); }
+.empty { color: var(--muted); padding: 20px 0; }
+footer { margin-top: 40px; color: var(--muted); font-size: 13px; }
+
+@media (max-width: 860px) {
+  .layout { grid-template-columns: minmax(0, 1fr); gap: 20px; }
+  nav.rail { position: static; max-height: none; overflow-x: auto; overflow-y: visible; margin-inline: -4px; padding-bottom: 4px; }
+  .rail ol { display: flex; gap: 6px; width: max-content; }
+  .rail a { grid-template-columns: auto auto; border: 1px solid var(--line); background: var(--panel); }
+  .rail a .c { display: none; }
+  .rail .sep { display: none; }
+  table.kv td.k { width: 45%; }
+}
+@media (prefers-reduced-motion: reduce) { * { transition: none !important; scroll-behavior: auto !important; } }
+html { scroll-behavior: smooth; }
+</style>
+</head>
+<body>
+
+<div class="wrap">
+  <header class="top">
+    <div class="brand">
+      <h1>Мій ігровий ПК</h1>
+      <span class="spec">7800X3D · RTX 5070 Solid · B650 AORUS ELITE AX V2 · DDR5-6000 CL30 · MAG 274QP 240 Гц</span>
+    </div>
+    <div class="toolbar">
+      <div class="meter">
+        <div class="meter-row"><span>Пройдено після переустановки</span><b id="total-count">0 / 0</b></div>
+        <div class="bar"><i id="total-bar"></i></div>
+      </div>
+      <div class="search"><input id="q" type="search" placeholder="Пошук: tRFC, G-Sync, Rapid Trigger…" aria-label="Пошук по чеклісту"></div>
+      <button class="btn" id="toggle-done" type="button" aria-pressed="false">Сховати виконане</button>
+      <button class="btn danger" id="reset" type="button">Скинути галочки</button>
+    </div>
+  </header>
+
+  <div class="layout">
+    <nav class="rail" aria-label="Етапи"><ol id="rail"></ol></nav>
+    <main id="main"></main>
+  </div>
+
+  <footer>
+    Головне правило: нічого, що шкодить залізу або скорочує ресурс. Без підняття напруг понад норму, без твікерів і реєстрових «оптимізаторів».
+    Галочки зберігаються лише в цьому браузері.
+  </footer>
+</div>
+
+<script>
+const VALORANT_EXE = 'C:\\Riot Games\\VALORANT\\live\\ShooterGame\\Binaries\\Win64\\VALORANT-Win64-Shipping.exe';
+
+/* Етапи йдуть у тому порядку, в якому їх треба робити після переустановки. */
+const STAGES = [
+{
+  id: 'before', title: 'Перед переустановкою',
+  intro: 'Якщо Windows ще працює. П’ять хвилин тут економлять годину потім.',
+  items: [
+    { id: 'b-bios-file', t: 'Зберегти профіль BIOS на флешку',
+      d: 'BIOS → Save &amp; Exit → <b>Save Profiles</b> → вибрати слот і також «Save to file» на USB. Після прошивки іншої версії BIOS профіль не завантажиться, тоді значення вводяться вручну (етап 1).' },
+    { id: 'b-ab', t: 'Скопіювати профілі MSI Afterburner',
+      d: 'Папку з профілями андервольту на флешку або в хмару. Після установки Afterburner (етап 7) закрий його, поверни файли на місце і запусти знову.',
+      cmd: ['C:\\Program Files (x86)\\MSI Afterburner\\Profiles'] },
+    { id: 'b-drivers', t: 'Скачати драйвери на флешку',
+      d: 'Драйвер NVIDIA, AMD Chipset, драйвер LAN / Wi-Fi материнки. Якщо Windows після установки не побачить мережу, драйвер уже під рукою.',
+      links: [['NVIDIA', 'https://www.nvidia.com/en-us/drivers/'], ['AMD Chipset (B650)', 'https://www.amd.com/en/support/downloads/drivers.html/chipsets/am5/b650.html'], ['Gigabyte: LAN / Wi-Fi', 'https://www.gigabyte.com/Motherboard/B650-AORUS-ELITE-AX-V2']] },
+    { id: 'b-folder', t: 'Скопіювати цю папку (guide.html, setup.ps1, START.cmd) на флешку' },
+    { id: 'b-periph', t: 'Миша і клавіатура: нічого робити не треба',
+      d: 'Налаштування зберігаються в пам’яті самих пристроїв. Після переустановки просто перевір їх (етапи 10–11).' }
+  ]
+},
+{
+  id: 'bios', title: 'BIOS', key: 'Del',
+  intro: 'Del при старті → F2 (Advanced Mode). Якщо BIOS не скидався і не прошивався, досить завантажити профіль і пройтись по таблицях для перевірки. Назви пунктів можуть трохи відрізнятись між версіями BIOS.',
+  items: [
+    { id: 'bi-load', t: 'Завантажити збережений профіль',
+      d: 'Save &amp; Exit → <b>Load Profiles</b> → твій слот (або файл з флешки). Далі перевір значення нижче.',
+      warn: 'Не заходь у Settings → IO Ports → <b>NVMe information</b>: BIOS F42c там зависає.' },
+    { id: 'bi-expo', t: 'Пам’ять: EXPO і частоти',
+      rows: [
+        ['Extreme Memory Profile', 'EXPO 1', 'Tweaker', '6000 30-40-40-76, 1.35 V'],
+        ['FCLK Frequency', '2000 MHz', 'Tweaker'],
+        ['UCLK DIV1 MODE', 'UCLK = MEMCLK', 'Tweaker → Advanced Memory Settings'],
+        ['DDR_VDD / DDR_VDDQ', 'Auto', 'Tweaker', 'не 1.40 V вручну, як було раніше'],
+        ['DDR5 Nitro Mode', 'Auto', 'Tweaker → Advanced Memory Settings'],
+        ['Low Latency Support', 'Disabled', 'Tweaker → Advanced Memory Settings'],
+        ['High Bandwidth Support', 'Disabled', 'Tweaker → Advanced Memory Settings']
+      ] },
+    { id: 'bi-timings', t: 'Пам’ять: таймінги вручну («середина» між EXPO і старими)',
+      d: 'Tweaker → Advanced Memory Settings → Memory Subtimings. Вводиш тільки ці шість, решта лишається <b>Auto</b> (tWR, tREFI, tRFC2, tRFCsb, tRTP, tRRD, tFAW, tWTRL, tWTRS…).',
+      rows: [
+        ['CAS Latency (tCL)', '30'],
+        ['tRCD', '38'],
+        ['tRP', '38'],
+        ['tRAS', '54'],
+        ['tRC', '92'],
+        ['tRFC1', '690']
+      ],
+      warn: 'Старі агресивні таймінги з вересня (tREFI 65535, tRFC 500, tRAS 30, 1.395 V) не повертати: саме вони разом із CO −25 давали неплавну картинку.' },
+    { id: 'bi-soc', t: 'Напруга SoC',
+      rows: [['CPU VCORE SOC', '1.25 V', 'Tweaker', 'норма до 1.30 V; під тестом було 1.238 V']],
+      d: 'Інші напруги (VDDG, VDDP, VDD Misc, LCLK) не чіпати, лишити Auto.' },
+    { id: 'bi-pbo', t: 'Процесор: PBO і Curve Optimizer',
+      rows: [
+        ['Precision Boost Overdrive', 'Advanced', 'Tweaker → Precision Boost Overdrive'],
+        ['PBO Limits', 'Disable'],
+        ['PBO Scalar', '1X'],
+        ['Max CPU Boost Clock Override', 'Disabled'],
+        ['Platform Thermal Throttle Limit', 'Manual → 88'],
+        ['Curve Optimizer', 'All Cores · Negative · 10', '', 'окремий тест CPU ще не проганяли (етап 13)'],
+        ['ECO Mode', 'Auto', 'Tweaker'],
+        ['X3D Turbo Mode', 'Disable', 'Tweaker'],
+        ['PBO Enhancement', 'Disabled', 'Tweaker']
+      ],
+      warn: 'CO −25 не повертати. Якщо будуть WHEA або вильоти, перший кандидат саме CO: спершу −5 або 0.' },
+    { id: 'bi-power', t: 'Енергозбереження',
+      rows: [
+        ['Power Supply Idle Control', 'Auto', 'Tweaker → Advanced CPU Settings', 'не Typical Current Idle'],
+        ['Global C-state Control', 'Auto', 'Tweaker → Advanced CPU Settings', 'не вимикати']
+      ] },
+    { id: 'bi-pcie', t: 'ReBAR, CSM, безпека',
+      rows: [
+        ['Above 4G Decoding', 'Enabled', 'Settings → IO Ports'],
+        ['Re-Size BAR Support', 'Auto', 'Settings → IO Ports'],
+        ['CSM Support', 'Disabled', 'Boot'],
+        ['Secure Boot', 'Enabled', 'Boot → Secure Boot', 'потрібен для Vanguard'],
+        ['AMD CPU fTPM', 'Enabled', 'Settings → Miscellaneous', 'потрібен для Vanguard'],
+        ['Fast Boot', 'Disabled', 'Boot', 'поки вимкнений']
+      ] },
+    { id: 'bi-fans', t: 'Smart Fan 6 (F6)',
+      rows: [
+        ['Помпа (хедер, куди підключена)', 'PWM 100 % фіксовано', '', '70–80 %, якщо гуде; норма 2500–3400 об/хв'],
+        ['Вентилятори радіатора, до 50 °C', '30 %'],
+        ['65 °C', '45 %'],
+        ['75 °C', '65 %'],
+        ['85 °C', '100 %'],
+        ['Інтервал (Fan Speed Interval)', '3']
+      ] },
+    { id: 'bi-save', t: 'Зберегти профіль і вийти',
+      d: 'Save &amp; Exit → <b>Save Profiles</b> (слот + файл на флешку) → Save &amp; Exit Setup. Перший старт після зміни пам’яті може йти 1–2 хв з чорним екраном: це тренування пам’яті, не вимикай.' }
+  ]
+},
+{
+  id: 'windows', title: 'Установка Windows',
+  intro: 'Чиста установка Windows 11 Pro з офіційного образу.',
+  items: [
+    { id: 'w-media', t: 'Флешка через Media Creation Tool з сайту Microsoft',
+      links: [['Windows 11: завантаження', 'https://www.microsoft.com/software-download/windows11']],
+      warn: 'Ніяких збірок, Danskyi Optimization, дебло-скриптів і «оптимізованих» образів.' },
+    { id: 'w-install', t: 'Установка на Samsung 990 EVO Plus',
+      d: 'Видаляєш розділи лише на системному SSD. Обліковий запис, мова, регіон як звичайно.' },
+    { id: 'w-net', t: 'Підключити інтернет', d: 'Якщо мережі нема, постав драйвер LAN / Wi-Fi з флешки.' },
+    { id: 'w-update', t: 'Windows Update до кінця',
+      d: 'Встанови всі оновлення і перезавантажуй, поки не скаже «Оновлено». <b>Крім драйверів</b> у «Додаткових оновленнях»: їх не ставити.',
+      note: 'Windows Update може сам поставити драйвер NVIDIA. Це нормально: на наступному етапі ставиш свіжий з «чистою установкою» поверх.' }
+  ]
+},
+{
+  id: 'drivers', title: 'Драйвери',
+  intro: 'Тільки два драйвери, обидва з офіційних сайтів.',
+  items: [
+    { id: 'dr-amd', t: 'AMD Chipset Driver',
+      d: 'Лише Chipset. <b>Без</b> Ryzen Master, AMD Adrenalin, Driver Booster. Після установки перезавантаження.',
+      links: [['amd.com: AM5 / B650', 'https://www.amd.com/en/support/downloads/drivers.html/chipsets/am5/b650.html']] },
+    { id: 'dr-nv', t: 'Драйвер NVIDIA (621.x WHQL або новіший WHQL)',
+      d: 'Вибірково → поставити галочку <b>«Виконати чисту установку»</b>. На свіжій Windows DDU не потрібен. DDU (у безпечному режимі) лише коли відкочуєшся на старіший драйвер або є проблеми.',
+      links: [['nvidia.com/drivers', 'https://www.nvidia.com/en-us/drivers/']] },
+    { id: 'dr-app', t: 'NVIDIA App',
+      rows: [['Автоматична оптимізація ігор', 'Вимк.'], ['Оверлей', 'Вимк.']] }
+  ]
+},
+{
+  id: 'script', title: 'Програма налаштування (setup.ps1)',
+  intro: 'Запусти START.cmd з цієї папки і погодься на права адміністратора. Скрипт перед кожною зміною питає Т/Н, старі значення пише в папку logs.',
+  items: [
+    { id: 's-restore', t: 'Пункт 5: точка відновлення', d: 'Страховка на випадок, якщо щось захочеш відкотити.' },
+    { id: 's-apply', t: 'Пункт 2: налаштування Windows',
+      d: 'Виставляє те, що ти й так міняв у «Параметрах»:',
+      rows: [
+        ['Швидкість вказівника', '6 / 11'],
+        ['Підвищена точність вказівника', 'Вимк.'],
+        ['Меню завантаження (після Danskyi)', 'Не показувати, 3 с'],
+        ['Ігровий режим', 'Увімк.'],
+        ['Фоновий запис Game Bar', 'Вимк.'],
+        ['Апаратне планування GPU (HAGS)', 'Увімк.'],
+        ['Оптимізації для віконних ігор', 'Увімк.'],
+        ['Змінна частота оновлення (VRR)', 'Увімк.'],
+        ['Тема', 'Темна'],
+        ['Панель завдань', 'Автоприховування'],
+        ['Вимкнення екрана', '5 хв'],
+        ['План живлення', 'Збалансований (стандартний)']
+      ] },
+    { id: 's-apps', t: 'Пункт 3: програми через winget',
+      d: 'Enter ставить рекомендовані: OCCT, BCUninstaller, Valorant (EU). За бажанням: Chrome, DDU, LatencyMon. Afterburner і Magician качаються вручну (пункт 4 відкриває сайти).' },
+    { id: 's-reboot', t: 'Перезавантажити ПК', d: 'Потрібно для HAGS.' },
+    { id: 's-check', t: 'Пункт 1: перевірка',
+      d: 'Показує налаштування Windows, а також: RAM на 6000 MT/s, Resizable BAR, монітор 2560×1440 @ 240, Secure Boot, fTPM, WHEA за 30 днів, стан дисків, автозапуск. Усе має бути <b>[ OK ]</b>.' }
+  ]
+},
+{
+  id: 'win-manual', title: 'Windows вручну',
+  intro: 'Те, що краще робити руками.',
+  items: [
+    { id: 'wm-startup', t: 'Автозапуск',
+      d: 'Диспетчер завдань → Автозавантаження. Лишити: <b>Vanguard</b>, NVIDIA, аудіо. Решту вимкнути.' },
+    { id: 'wm-display', t: 'Дисплей: 240 Гц і HDR',
+      d: 'Параметри → Система → Дисплей → Розширений дисплей → <b>240 Гц</b>. HDR на робочому столі вимк. Для AAA з рідним HDR вмикається <code>Win + Alt + B</code>.' },
+    { id: 'wm-bcu', t: 'Непотрібні програми видаляти через BCUninstaller', links: [['bcuninstaller.com', 'https://www.bcuninstaller.com']] },
+    { id: 'wm-dont', t: 'Не чіпати',
+      d: 'Defender, Memory Integrity, служби, файл підкачки, план живлення «Ultimate Performance» і плани з інтернету.' }
+  ]
+},
+{
+  id: 'nvidia', title: 'Панель керування NVIDIA',
+  intro: 'ПКМ на робочому столі → Панель керування NVIDIA.',
+  items: [
+    { id: 'nv-gsync', t: 'Налаштування G-SYNC',
+      rows: [['Увімкнути G-SYNC', 'Так · для повноекранного режиму'], ['Монітор', 'MAG 274QP, «увімкнути для вибраної моделі»']] },
+    { id: 'nv-res', t: 'Зміна роздільної здатності',
+      rows: [['Роздільна здатність', '2560 × 1440'], ['Частота', '240 Гц'], ['Глибина кольору', '10 bpc'], ['Підключення', 'DisplayPort']] },
+    { id: 'nv-global', t: 'Керування параметрами 3D → Глобальні',
+      rows: [
+        ['Режим низької затримки (Low Latency Mode)', 'Увімк. (On)'],
+        ['Вертикальна синхронізація', 'Увімк.'],
+        ['Макс. частота кадрів', '237'],
+        ['Режим керування живленням', 'Нормальний'],
+        ['Розмір кешу шейдерів', '10 ГБ']
+      ] },
+    { id: 'nv-valorant', t: 'Програмні налаштування → Valorant',
+      d: 'Додати файл гри:',
+      cmd: [VALORANT_EXE],
+      rows: [
+        ['Технологія монітора', 'G-SYNC'],
+        ['Вертикальна синхронізація', 'Увімк. (драйвер)'],
+        ['Макс. частота кадрів', 'Вимк.'],
+        ['Режим керування живленням', 'Максимальна продуктивність']
+      ],
+      note: 'На OLED без V-Sync були розриви, тому зв’язка G-Sync + V-Sync (драйвер) + Reflex. Ліміт кадрів робить Reflex сам.' },
+    { id: 'nv-rebar', t: 'Перевірити Resizable BAR', d: 'Інформація про систему → Resizable BAR: <b>Так</b>. (Скрипт теж це перевіряє.)' }
+  ]
+},
+{
+  id: 'ab', title: 'Андервольт (MSI Afterburner)',
+  intro: 'Тільки з msi.com. RivaTuner при установці можна не ставити, якщо оверлей не потрібен.',
+  items: [
+    { id: 'ab-install', t: 'Установка', links: [['msi.com: Afterburner', 'https://www.msi.com/Landing/afterburner/graphics-cards']],
+      d: 'Якщо зберігав профілі: закрий Afterburner, скопіюй файли назад у <code>C:\\Program Files (x86)\\MSI Afterburner\\Profiles</code>, запусти, вибери профіль 1.' },
+    { id: 'ab-base', t: 'Базові повзунки',
+      rows: [['Power Limit', '100 %'], ['Memory Clock', '+0'], ['Core Clock', 'крива (нижче)']],
+      warn: 'Старий розгін (Power Limit 110, Mem +800, Core +200) не повертати.' },
+    { id: 'ab-curve', t: 'Крива: рівна з 950 mV на ~2800 МГц',
+      d: '<ol><li>Core Clock поставити, наприклад, −250 і натиснути ✓, щоб уся крива опустилась.</li><li><code>Ctrl + F</code>: відкрити редактор кривої.</li><li>Точку <b>950 mV</b> підтягнути до <b>~2800 МГц</b>.</li><li>Натиснути ✓ (Apply): усе правіше 950 mV вирівняється в полицю.</li><li>Перевірити, що жодна точка правіше не вища за 2800.</li><li>Зберегти в профіль 1, увімкнути «Застосовувати розгін при запуску системи».</li></ol>' },
+    { id: 'ab-test', t: 'Перевірити: OCCT 3D Adaptive 10 хв + Valorant', d: 'GPU 60–75 °C (до 83 прийнятно), Memory Temp ≤ 85–90 °C. Якщо вилітає або артефакти, підняти до 975 mV.' }
+  ]
+},
+{
+  id: 'monitor', title: 'Монітор MSI MAG 274QP',
+  intro: 'Меню OSD (джойстик ззаду монітора).',
+  items: [
+    { id: 'm-main', t: 'Основне',
+      rows: [['Вхід', 'DisplayPort'], ['Частота', '240 Гц'], ['Adaptive-Sync', 'Увімк.'], ['Night Vision', 'Вимк.'], ['AI Vision', 'Вимк.'], ['HDR', 'Вимк. (крім AAA з рідним HDR)']] },
+    { id: 'm-oled', t: 'OLED Care: усе увімкнено',
+      rows: [['Pixel Shift', 'Увімк.'], ['Static Screen Detection', 'Увімк.'], ['Taskbar Detection', 'Увімк.'], ['Logo Detection', 'Увімк.'], ['Boundary Detection', 'Увімк.']],
+      warn: 'Panel Protect не скасовувати. Монітор не знеструмлювати (не вимикати з розетки чи подовжувача): обслуговування панелі йде в режимі очікування.' }
+  ]
+},
+{
+  id: 'valorant', title: 'Valorant',
+  intro: 'Керування і приціл Riot підтягне з акаунта; графіку краще перевірити, вона зберігається локально.',
+  items: [
+    { id: 'v-general', t: 'Video → General',
+      rows: [
+        ['Display Mode', 'Fullscreen'],
+        ['Resolution', '2560 × 1440 · 240 Hz'],
+        ['Limit FPS Always', 'Off'],
+        ['Limit FPS in Menu', '144'],
+        ['Limit FPS in Background', '30'],
+        ['NVIDIA Reflex Low Latency', 'On + Boost']
+      ] },
+    { id: 'v-graphics', t: 'Video → Graphics Quality',
+      rows: [
+        ['Multithreaded Rendering', 'On'],
+        ['Material / Texture / Detail / UI Quality', 'Low'],
+        ['Vignette', 'Off'],
+        ['VSync', 'Off', '', 'V-Sync іде з драйвера'],
+        ['Anti-Aliasing', 'MSAA 4x'],
+        ['Anisotropic Filtering', '4x (до 8x)'],
+        ['Improve Clarity', 'Off'],
+        ['Experimental Sharpening', 'Off'],
+        ['Bloom', 'Off'],
+        ['Distortion', 'Off'],
+        ['Cast Shadows', 'Off']
+      ] },
+    { id: 'v-input', t: 'General / Mouse і мережа',
+      rows: [['Raw Input Buffer', 'On'], ['Network Buffering', 'Moderate', '', 'Minimum, якщо з’єднання ідеальне']],
+      note: 'Frame Generation у Valorant не вмикати. Reflex 2 / Frame Warp у Valorant станом на осінь 2026 ще нема.' }
+  ]
+},
+{
+  id: 'mouse', title: 'Миша Attack Shark R5 Ultra',
+  intro: 'Веб-драйвер у браузері (Chrome / Edge). Налаштування живуть у самій миші, тут просто перевірка.',
+  items: [
+    { id: 'ms-set', t: 'Значення',
+      links: [['xvalleyinno.top/AttackShark', 'https://xvalleyinno.top/AttackShark']],
+      rows: [
+        ['Підключення', '2.4G донгл'],
+        ['Polling rate', '1000 Гц'],
+        ['DPI', '1600 (один рівень)'],
+        ['Debounce', '1 мс'],
+        ['LOD', '1 мм'],
+        ['Angle Snap', 'Вимк.'],
+        ['Ripple Control', 'Вимк.'],
+        ['Motion Sync', 'Увімк.'],
+        ['Режим «Охота на акул»', 'Увімк.', '', 'батарея сідає швидше']
+      ] }
+  ]
+},
+{
+  id: 'kb', title: 'Клавіатура Attack Shark X65HE',
+  intro: 'qmk.top. У драйвері показується як X68HE, це нормально.',
+  items: [
+    { id: 'kb-set', t: 'Значення',
+      links: [['qmk.top', 'https://qmk.top']],
+      rows: [
+        ['W A S D: спрацювання', '1.00 мм'],
+        ['W A S D: Rapid Trigger', '0.25 / 0.25 мм'],
+        ['Лівий Ctrl', '0.50 мм', '', '1.0 мм, якщо випадково присідаєш'],
+        ['Решта клавіш', '2.00 мм'],
+        ['DKS / MT / TGL', 'не використовуються']
+      ],
+      warn: '<b>Snap Key / SOCD: вимкнено, НЕ вмикати.</b> Ризик покарання у Valorant.' }
+  ]
+},
+{
+  id: 'ssd', title: 'SSD: Samsung Magician',
+  intro: 'Samsung 990 EVO Plus 1 ТБ. У winget Magician немає, качається з сайту Samsung.',
+  items: [
+    { id: 'ssd-install', t: 'Установка', links: [['Samsung Magician', 'https://semiconductor.samsung.com/consumer-storage/support/tools/']] },
+    { id: 'ssd-check', t: 'Перевірка',
+      rows: [['Drive Health', 'Good'], ['Температура', '~39 °C'], ['Бенчмарк (норма)', '≈6700 / 5800 МБ/с', '', '858K / 922K IOPS'], ['Прошивка', 'якщо пропонує оновлення, можна']] },
+    { id: 'ssd-mode', t: 'Режим Custom',
+      rows: [['Sleep on Standby', 'OFF'], ['Over Provisioning', 'OFF']],
+      warn: 'Сторонні «оптимізатори SSD» не ставити.' }
+  ]
+},
+{
+  id: 'tests', title: 'Тести стабільності',
+  intro: 'OCCT ставиться скриптом. Під час тестів дивись на таблицю «Норми» внизу.',
+  items: [
+    { id: 't-ram', t: 'OCCT → Memory, пресет Heat, 30 хв', d: '0 помилок. Пам’ять ≤ 55–60 °C (минулого разу ~48 °C), CPU ~65 °C, SoC ~1.24 V.' },
+    { id: 't-cpu', t: 'OCCT → CPU, Core Cycling, 30 хв (перевірка CO −10)', d: '0 помилок, CPU ≤ 89 °C. Після тесту запусти пункт 1 скрипта: WHEA має бути 0.' },
+    { id: 't-gpu', t: 'OCCT → 3D Adaptive, 10 хв', d: 'GPU Temp 60–75 °C (до 83 прийнятно), GPU Memory Temp ≤ 85–90 °C. Hot Spot на Blackwell не показується.' },
+    { id: 't-range', t: 'Valorant → Range', d: 'Картинка плавна, FPS стабільний, постріли реєструються.' },
+    { id: 't-latency', t: 'LatencyMon (необов’язково)', d: 'Минулого разу система чиста: жоден драйвер не вище ~25 мкс у середньому.' }
+  ]
+}
+];
+
+/* ---------------------------------------------------------------- рендер */
+const STORE_KEY = 'pc-setup-checklist-v1';
+let state = {};
+try { state = JSON.parse(localStorage.getItem(STORE_KEY) || '{}') || {}; } catch (e) { state = {}; }
+function save() { try { localStorage.setItem(STORE_KEY, JSON.stringify(state)); } catch (e) {} }
+
+const esc = s => String(s).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+const $ = (sel, el = document) => el.querySelector(sel);
+
+function renderItem(it) {
+  let h = `<div class="item" data-id="${it.id}">
+    <input type="checkbox" id="chk-${it.id}" ${state[it.id] ? 'checked' : ''} aria-labelledby="lbl-${it.id}">
+    <div class="body"><label class="t" id="lbl-${it.id}" for="chk-${it.id}">${it.t}</label>`;
+  if (it.d) h += `<div class="d">${it.d}</div>`;
+  if (it.rows) {
+    h += '<div class="kv-wrap"><table class="kv"><tbody>';
+    for (const r of it.rows) {
+      const path = r[2] ? `<span class="path">${esc(r[2])}</span>` : '';
+      h += `<tr><td class="k">${esc(r[0])}${path}</td><td class="v">${esc(r[1])}</td>${r[3] ? `<td class="w">${esc(r[3])}</td>` : '<td class="w"></td>'}</tr>`;
+    }
+    h += '</tbody></table></div>';
+  }
+  if (it.cmd) for (const c of it.cmd) h += `<div class="cmd"><pre>${esc(c)}</pre><button class="btn copy" type="button" data-copy="${esc(c)}">Копіювати</button></div>`;
+  if (it.links) h += '<div class="links">' + it.links.map(l => `<a href="${l[1]}" target="_blank" rel="noopener">${esc(l[0])} ↗</a>`).join('') + '</div>';
+  if (it.note) h += `<div class="note">${it.note}</div>`;
+  if (it.warn) h += `<div class="warn">${it.warn}</div>`;
+  return h + '</div></div>';
+}
+
+const REF = `
+<section class="stage" id="ref">
+  <div class="stage-head"><h2>Довідка</h2></div>
+  <div class="ref-grid">
+    <div class="card">
+      <h3>Норми для мого заліза</h3>
+      <div class="kv-wrap"><table class="kv norms"><tbody>
+        <tr><td class="k">CPU простій</td><td class="v">40–55 °C</td></tr>
+        <tr><td class="k">CPU в іграх</td><td class="v">55–75 °C</td></tr>
+        <tr><td class="k">CPU Cinebench</td><td class="v">75–85 °C, ліміт 89</td></tr>
+        <tr><td class="k">VSOC</td><td class="v">≤ 1.30 V</td></tr>
+        <tr><td class="k">RAM під тестом</td><td class="v">≤ 55–60 °C</td></tr>
+        <tr><td class="k">GPU в іграх</td><td class="v">60–75 °C (до 83)</td></tr>
+        <tr><td class="k">GPU Memory Temp</td><td class="v">≤ 85–90 °C</td></tr>
+        <tr><td class="k">Помпа</td><td class="v">2500–3400 об/хв</td></tr>
+        <tr><td class="k">WHEA errors</td><td class="v">0</td></tr>
+      </tbody></table></div>
+    </div>
+    <div class="card">
+      <h3>Чого НЕ робити</h3>
+      <ul>
+        <li>Danskyi Optimization, твікери, дебло-скрипти, реєстрові «оптимізатори», Process Lasso.</li>
+        <li>Ручний розгін CPU і ручні напруги (VDDG, VDDP, SoC вище 1.30, VDD Misc, LCLK).</li>
+        <li>Snap Key / SOCD у Valorant.</li>
+        <li>Over Provisioning і сторонні «оптимізатори SSD».</li>
+        <li>Ultimate Performance і плани живлення з інтернету.</li>
+        <li>Вимикати Defender, Memory Integrity, C-states.</li>
+        <li>Visual C++ «all-in-one» збірки (лише <a href="https://learn.microsoft.com/cpp/windows/latest-supported-vc-redist" target="_blank" rel="noopener">з сайту Microsoft</a>).</li>
+        <li>Розбирати відеокарту без причини (гарантія).</li>
+      </ul>
+    </div>
+    <div class="card">
+      <h3>Якщо щось не так</h3>
+      <ul>
+        <li><b>Неплавна картинка при стабільному FPS, постріли «не реєструються»:</b> перевір у BIOS CO (має бути −10, не −25), таймінги (не вересневі), DDR_VDD Auto, Nitro Auto, Low Latency Disabled, Power Supply Idle Control Auto.</li>
+        <li><b>WHEA-помилки:</b> спершу CO −5 або 0, потім тест OCCT CPU.</li>
+        <li><b>BIOS зависає:</b> не відкривати IO Ports → NVMe information.</li>
+        <li><b>Дивні проблеми на F42c</b> (імовірно бета): прошити стабільну F41. Після прошивки профілі BIOS не працюють, значення беруться з етапу 1.</li>
+        <li><b>Розриви на OLED:</b> V-Sync у драйвері для Valorant має бути увімкнений разом з G-Sync.</li>
+        <li><b>Сенса здається «більшою»</b> після плавної картинки: 2–3 дні на звикання, потім мінус 5–10 %.</li>
+      </ul>
+    </div>
+    <div class="card">
+      <h3>Ще не зроблено</h3>
+      <ul>
+        <li>Тест CPU для CO −10: OCCT Core Cycling 30 хв + WHEA.</li>
+        <li>Тест GPU: OCCT 3D Adaptive 10 хв.</li>
+        <li>AAA: DLSS і Frame Generation (у Valorant FG не вмикати).</li>
+        <li>Експеримент (необов’язково): план «Висока продуктивність» проти «Збалансованого» на Range, порівняти FPS і 1 % low. Зараз стоїть «Збалансований».</li>
+      </ul>
+      <div class="cmd" style="margin-top:10px"><pre>powercfg -duplicatescheme 8c5e7fda-e8bf-4a96-9a85-a6e23a8c635c</pre><button class="btn copy" type="button" data-copy="powercfg -duplicatescheme 8c5e7fda-e8bf-4a96-9a85-a6e23a8c635c">Копіювати</button></div>
+    </div>
+    <div class="card">
+      <h3>Залізо</h3>
+      <div class="kv-wrap"><table class="kv"><tbody>
+        <tr><td class="k">CPU</td><td>Ryzen 7 7800X3D</td></tr>
+        <tr><td class="k">GPU</td><td>Zotac RTX 5070 Solid, PCIe 5.0 x16</td></tr>
+        <tr><td class="k">RAM</td><td>Patriot Viper Venom 2×16 DDR5-6000 CL30, SK Hynix H-die</td></tr>
+        <tr><td class="k">Материнка</td><td>Gigabyte B650 AORUS ELITE AX V2, BIOS F42c</td></tr>
+        <tr><td class="k">SSD</td><td>Samsung 990 EVO Plus 1 ТБ (PCIe 5.0 x2)</td></tr>
+        <tr><td class="k">Охолодження</td><td>DeepCool LE360 V2</td></tr>
+        <tr><td class="k">БЖ</td><td>Gigabyte 750 W 80+ Gold, ATX 3.x</td></tr>
+        <tr><td class="k">Монітор</td><td>MSI MAG 274QP QD-OLED X24, 1440p 240 Гц</td></tr>
+        <tr><td class="k">Периферія</td><td>Attack Shark R5 Ultra · X65HE</td></tr>
+      </tbody></table></div>
+    </div>
+  </div>
+</section>`;
+
+function render() {
+  const main = $('#main'), rail = $('#rail');
+  let m = '', r = '';
+  STAGES.forEach((s, i) => {
+    const num = String(i).padStart(2, '0');
+    m += `<section class="stage" id="${s.id}" data-stage="${s.id}">
+      <div class="stage-head"><span class="stage-num">${num}</span><h2>${s.title}</h2><span class="stage-count" data-count="${s.id}"></span></div>
+      ${s.intro ? `<p class="stage-intro">${s.intro}</p>` : ''}
+      <div class="items">${s.items.map(renderItem).join('')}</div>
+    </section>`;
+    r += `<li><a href="#${s.id}" data-rail="${s.id}"><span class="n">${num}</span><span>${s.title}</span><span class="c" data-rail-count="${s.id}"></span></a></li>`;
+  });
+  m += REF + '<p class="empty" id="nothing" hidden>Нічого не знайдено.</p>';
+  r += `<li class="sep">Довідка</li><li><a href="#ref"><span class="n">—</span><span>Норми, заборони, проблеми</span><span class="c"></span></a></li>`;
+  main.innerHTML = m; rail.innerHTML = r;
+  updateCounts();
+}
+
+function updateCounts() {
+  let all = 0, done = 0;
+  for (const s of STAGES) {
+    const n = s.items.length, d = s.items.filter(it => state[it.id]).length;
+    all += n; done += d;
+    const txt = `${d} / ${n}`;
+    const sc = document.querySelector(`[data-count="${s.id}"]`); if (sc) sc.textContent = txt;
+    const rc = document.querySelector(`[data-rail-count="${s.id}"]`); if (rc) rc.textContent = txt;
+    const ra = document.querySelector(`[data-rail="${s.id}"]`); if (ra) ra.classList.toggle('done', d === n);
+  }
+  $('#total-count').textContent = `${done} / ${all}`;
+  $('#total-bar').style.width = (all ? (done / all * 100) : 0) + '%';
+  document.querySelectorAll('.item').forEach(el => el.classList.toggle('is-done', !!state[el.dataset.id]));
+}
+
+document.addEventListener('change', e => {
+  if (e.target.matches('.item input[type="checkbox"]')) {
+    const id = e.target.closest('.item').dataset.id;
+    if (e.target.checked) state[id] = 1; else delete state[id];
+    save(); updateCounts();
+  }
+});
+
+document.addEventListener('click', e => {
+  const b = e.target.closest('.copy');
+  if (!b) return;
+  const text = b.dataset.copy;
+  const done = () => { const o = b.textContent; b.textContent = 'Скопійовано'; setTimeout(() => b.textContent = o, 1400); };
+  const fallback = () => {
+    const pre = b.parentElement.querySelector('pre');
+    const range = document.createRange(); range.selectNodeContents(pre);
+    const sel = getSelection(); sel.removeAllRanges(); sel.addRange(range);
+    b.textContent = 'Виділено: Ctrl+C'; setTimeout(() => b.textContent = 'Копіювати', 2000);
+  };
+  try { navigator.clipboard.writeText(text).then(done, fallback); } catch (err) { fallback(); }
+});
+
+const resetBtn = $('#reset');
+let resetArmed = null;
+resetBtn.addEventListener('click', () => {
+  if (!resetArmed) {
+    resetBtn.textContent = 'Точно? Натисни ще раз';
+    resetArmed = setTimeout(() => { resetArmed = null; resetBtn.textContent = 'Скинути галочки'; }, 3000);
+    return;
+  }
+  clearTimeout(resetArmed); resetArmed = null;
+  state = {}; save();
+  document.querySelectorAll('.item input[type="checkbox"]').forEach(c => c.checked = false);
+  updateCounts();
+  resetBtn.textContent = 'Скинуто';
+  setTimeout(() => resetBtn.textContent = 'Скинути галочки', 1500);
+});
+
+const toggleBtn = $('#toggle-done');
+function applyHide(on) {
+  document.body.classList.toggle('hide-done', on);
+  toggleBtn.setAttribute('aria-pressed', on ? 'true' : 'false');
+  toggleBtn.textContent = on ? 'Показати виконане' : 'Сховати виконане';
+}
+toggleBtn.addEventListener('click', () => {
+  const on = !document.body.classList.contains('hide-done');
+  applyHide(on);
+  try { localStorage.setItem(STORE_KEY + '-hide', on ? '1' : ''); } catch (e) {}
+});
+
+$('#q').addEventListener('input', e => {
+  const q = e.target.value.trim().toLowerCase();
+  let any = false;
+  document.querySelectorAll('section.stage[data-stage]').forEach(sec => {
+    let vis = 0;
+    sec.querySelectorAll('.item').forEach(it => {
+      const hit = !q || it.textContent.toLowerCase().includes(q);
+      it.hidden = !hit; if (hit) vis++;
+    });
+    const titleHit = q && sec.querySelector('h2').textContent.toLowerCase().includes(q);
+    if (titleHit) { sec.querySelectorAll('.item').forEach(it => it.hidden = false); vis = 1; }
+    sec.hidden = !vis; if (vis) any = true;
+  });
+  const ref = $('#ref');
+  const refHit = !q || ref.textContent.toLowerCase().includes(q);
+  ref.hidden = !refHit;
+  $('#nothing').hidden = any || refHit;
+});
+
+render();
+try { if (localStorage.getItem(STORE_KEY + '-hide')) applyHide(true); } catch (e) {}
+</script>
+</body>
+</html>
